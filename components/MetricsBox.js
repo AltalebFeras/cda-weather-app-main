@@ -1,10 +1,11 @@
+import React from 'react';
 import { degToCompass } from "../services/converters";
 import { getTime, getAMPM, getVisibility, getWindSpeed } from "../services/helpers";
 import { MetricsCard } from "./MetricsCard";
 import styles from "./MetricsBox.module.css";
 
 export const MetricsBox = ({ weatherData, unitSystem }) => {
-  const { current, current_units } = weatherData;
+  const { current, hourly, current_units, daily, utc_offset_seconds } = weatherData;
 
   return (
     <div className={styles.wrapper}>
@@ -29,20 +30,20 @@ export const MetricsBox = ({ weatherData, unitSystem }) => {
       <MetricsCard
         title={"Visibility"}
         iconSrc={"/icons/binocular.png"}
-        metric={getVisibility(unitSystem, current.visibility)}
+        metric={getVisibility(unitSystem,hourly.visibility[new Date().getHours()])}
         unit={unitSystem === "metric" ? "km" : "miles"}
       />
       <MetricsCard
         title={"Sunrise"}
         iconSrc={"/icons/sunrise.png"}
-        metric={getTime(unitSystem, weatherData.daily.sunrise[0], weatherData.utc_offset_seconds)}
-        unit={getAMPM(unitSystem, weatherData.daily.sunrise[0], weatherData.utc_offset_seconds)}
+        metric={getTime(unitSystem, daily.sunrise[0], utc_offset_seconds)}
+        unit={getAMPM(unitSystem, daily.sunrise[0], utc_offset_seconds)}
       />
       <MetricsCard
         title={"Sunset"}
         iconSrc={"/icons/sunset.png"}
-        metric={getTime(unitSystem, weatherData.daily.sunset[0], weatherData.utc_offset_seconds)}
-        unit={getAMPM(unitSystem, weatherData.daily.sunset[0], weatherData.utc_offset_seconds)}
+        metric={getTime(unitSystem, daily.sunset[0], utc_offset_seconds)}
+        unit={getAMPM(unitSystem, daily.sunset[0], utc_offset_seconds)}
       />
     </div>
   );
