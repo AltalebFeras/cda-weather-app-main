@@ -4,78 +4,118 @@ import { MainCard } from "../components/MainCard";
 import { ContentBox } from "../components/ContentBox";
 import { Header } from "../components/Header";
 import { DateAndTime } from "../components/DateAndTime";
-import { Search } from "../components/Search";
 import { MetricsBox } from "../components/MetricsBox";
 import { UnitSwitch } from "../components/UnitSwitch";
 import { LoadingScreen } from "../components/LoadingScreen";
 import { ErrorScreen } from "../components/ErrorScreen";
 
 import styles from "../styles/Home.module.css";
+import settings from "../config.json";
+import { getWeatherCodeAttributes } from "../services/helpers";
 
 export const App = () => {
-  const [cityInput, setCityInput] = useState("Riga");
-  const [triggerFetch, setTriggerFetch] = useState(true);
-  const [weatherData, setWeatherData] = useState();
+  const city = settings.city;
+  const [geoData, setGeoData] = useState(null);
+  const [weatherData, setWeatherData] = useState(null);
   const [unitSystem, setUnitSystem] = useState("metric");
+  const [timer, setTimer] = useState(0);
 
+  // Refresh timer
   useEffect(() => {
-    const getData = async () => {
-      const res = await fetch("api/data", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cityInput }),
-      });
-      const data = await res.json();
-      setWeatherData({ ...data });
-      setCityInput("");
+    const interval = setInterval(() => {
+      setTimer((timer) => timer + 1);
+    }, 3600000); // 1 hour
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch GeoData
+  useEffect(() => {
+    const getGeoData = async () => {
+      try {
+        const res1 = await fetch("api/searchCity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ city }),
+        });
+
+        const geo = await res1.json();
+
+        if (geo.results && geo.results[0].name) {
+          setGeoData({ ...geo.results[0] });
+        } else {
+          setWeatherData({ error: "City not found" });
+        }
+      } catch (error) {
+        setWeatherData({ error: "Failed to fetch geo data" });
+        console.error("Error fetching geo data:", error);
+      }
     };
-    getData();
-  }, [triggerFetch]);
+
+    getGeoData();
+  }, [city]);
+
+  // Fetch WeatherData
+  useEffect(() => {
+    const getWeatherData = async () => {
+      if (geoData) {
+        try {
+          const res2 = await fetch("api/data", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ geoData }),
+          });
+          const data = await res2.json();
+
+          if (data.daily) {
+            const weatherCodeAttributes = getWeatherCodeAttributes(
+              data.daily.weather_code[0], // assuming you're interested in the first day's weather
+              data.daily.is_day
+            );
+            setWeatherData({
+              ...data,
+              description: weatherCodeAttributes.description,
+              iconName: weatherCodeAttributes.iconName,
+              geoData: geoData,
+            });
+          } else {
+            setWeatherData({ error: "Data unavailable" });
+          }
+        } catch (error) {
+          console.error("Error fetching weather data:", error);
+          setWeatherData({ error: "Failed to fetch weather data" });
+        }
+      }
+    };
+
+    getWeatherData();
+  }, [timer, geoData]);
 
   const changeSystem = () =>
-    unitSystem == "metric"
+    unitSystem === "metric"
       ? setUnitSystem("imperial")
       : setUnitSystem("metric");
 
-  return weatherData && !weatherData.message ? (
+  return weatherData && !weatherData.error ? (
     <div className={styles.wrapper}>
       <MainCard
-        city={weatherData.name}
-        country={weatherData.sys.country}
-        description={weatherData.weather[0].description}
-        iconName={weatherData.weather[0].icon}
-        unitSystem={unitSystem}
-        weatherData={weatherData}
-      />
+  city={geoData.name}
+  country={geoData.country_code}
+  description={weatherData.description}
+  iconName={weatherData.iconName}
+  unitSystem={unitSystem}
+  weatherData={weatherData}  // Ensure this contains the expected structure
+/>
+
       <ContentBox>
         <Header>
           <DateAndTime weatherData={weatherData} unitSystem={unitSystem} />
-          <Search
-            placeHolder="Search a city..."
-            value={cityInput}
-            onFocus={(e) => {
-              e.target.value = "";
-              e.target.placeholder = "";
-            }}
-            onChange={(e) => setCityInput(e.target.value)}
-            onKeyDown={(e) => {
-              e.keyCode === 13 && setTriggerFetch(!triggerFetch);
-              e.target.placeholder = "Search a city...";
-            }}
-          />
         </Header>
         <MetricsBox weatherData={weatherData} unitSystem={unitSystem} />
         <UnitSwitch onClick={changeSystem} unitSystem={unitSystem} />
       </ContentBox>
     </div>
-  ) : weatherData && weatherData.message ? (
-    <ErrorScreen errorMessage="City not found, try again!">
-      <Search
-        onFocus={(e) => (e.target.value = "")}
-        onChange={(e) => setCityInput(e.target.value)}
-        onKeyDown={(e) => e.keyCode === 13 && setTriggerFetch(!triggerFetch)}
-      />
-    </ErrorScreen>
+  ) : weatherData && weatherData.error ? (
+    <ErrorScreen errorMessage={weatherData.error} />
   ) : (
     <LoadingScreen loadingMessage="Loading data..." />
   );

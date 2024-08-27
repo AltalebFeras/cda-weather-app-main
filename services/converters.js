@@ -32,10 +32,24 @@ export const degToCompass = (num) => {
   return arr[val % 16];
 };
 
-export const unixToLocalTime = (unixSeconds, timezone) => {
-  let time = new Date((unixSeconds + timezone) * 1000)
-    .toISOString()
-    .match(/(\d{2}:\d{2})/)[0];
+export const unixToLocalTime = (unixSeconds, timezoneOffset) => {
+  if (typeof unixSeconds !== "number" || typeof timezoneOffset !== "number") {
+    console.error("Invalid input values:", { unixSeconds, timezoneOffset });
+    return "Invalid time"; // Return a default value or handle it in the UI
+  }
 
+  // Ensure the time is in milliseconds and add the timezone offset
+  const date = new Date(unixSeconds * 1000 + timezoneOffset * 1000);
+
+  if (isNaN(date.getTime())) {
+    console.error("Invalid date calculation for:", { unixSeconds, timezoneOffset });
+    return "Invalid time"; // Handle this scenario as well
+  }
+
+  // Extract hours and minutes from the ISO string
+  let time = date.toISOString().match(/(\d{2}:\d{2})/)[0];
+
+  // Remove leading '0' from hours if present
   return time.startsWith("0") ? time.substring(1) : time;
 };
+
