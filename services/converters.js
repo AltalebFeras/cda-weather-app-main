@@ -31,25 +31,28 @@ export const degToCompass = (num) => {
   ];
   return arr[val % 16];
 };
-
 export const unixToLocalTime = (unixSeconds, timezoneOffset) => {
-  if (typeof unixSeconds !== "number" || typeof timezoneOffset !== "number") {
-    console.error("Invalid input values:", { unixSeconds, timezoneOffset });
-    return "Invalid time"; // Return a default value or handle it in the UI
+  if (typeof unixSeconds === "string") {
+    unixSeconds = new Date(unixSeconds).getTime() / 1000; // Convert ISO 8601 string to Unix timestamp
   }
 
-  // Ensure the time is in milliseconds and add the timezone offset
-  const date = new Date(unixSeconds * 1000 + timezoneOffset * 1000);
+  if (typeof unixSeconds !== "number" || typeof timezoneOffset !== "number") {
+    console.error("Invalid input values:", { unixSeconds, timezoneOffset });
+    return "Invalid time";
+  }
+
+  const date = new Date((unixSeconds + timezoneOffset) * 1000);
 
   if (isNaN(date.getTime())) {
     console.error("Invalid date calculation for:", { unixSeconds, timezoneOffset });
-    return "Invalid time"; // Handle this scenario as well
+    return "Invalid time";
   }
 
-  // Extract hours and minutes from the ISO string
-  let time = date.toISOString().match(/(\d{2}:\d{2})/)[0];
+  let hours = date.getUTCHours();
+  let minutes = date.getUTCMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  minutes = minutes < 10 ? `0${minutes}` : minutes;
 
-  // Remove leading '0' from hours if present
-  return time.startsWith("0") ? time.substring(1) : time;
+  return `${hours}:${minutes} ${ampm}`;
 };
-
