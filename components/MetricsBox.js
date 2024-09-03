@@ -30,7 +30,7 @@ export const MetricsBox = ({ weatherData, unitSystem }) => {
       <MetricsCard
         title={"Visibility"}
         iconSrc={"/icons/binocular.png"}
-        metric={getVisibility(unitSystem,hourly.visibility[new Date().getHours()])}
+        metric={getVisibility(unitSystem, hourly.visibility[new Date().getHours()])}
         unit={unitSystem === "metric" ? "km" : "miles"}
       />
       <MetricsCard
