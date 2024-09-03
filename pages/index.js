@@ -11,7 +11,7 @@ import { ErrorScreen } from "../components/ErrorScreen";
 
 import styles from "../styles/Home.module.css";
 import settings from "../config.json";
-import { getWeatherCodeAttributes } from "../services/helpers";
+import { getWeatherCode } from "../services/helpers";
 
 export const App = () => {
   const city = settings.city;
@@ -67,8 +67,8 @@ export const App = () => {
           const data = await res2.json();
 
           if (data.daily) {
-            const weatherCodeAttributes = getWeatherCodeAttributes(
-              data.daily.weather_code[0], // assuming you're interested in the first day's weather
+            const weatherCodeAttributes = getWeatherCode(
+              data.daily.weather_code[0],
               data.daily.is_day
             );
             setWeatherData({
@@ -103,7 +103,7 @@ export const App = () => {
   description={weatherData.description}
   iconName={weatherData.iconName}
   unitSystem={unitSystem}
-  weatherData={weatherData}  // Ensure this contains the expected structure
+  weatherData={weatherData} 
 />
 
       <ContentBox>
